@@ -113,7 +113,7 @@ def inject_throw_error(ctx: InjectContext, strategy:int,
         rm_start = None
         rm_end = None
         while i <= body_end:
-            if ctx.lines[i-1].find("approve(") != -1:
+            if ctx.lines[i-1].find("approve(") != -1 or ctx.lines[i-1].find("spendAllowance(") != -1:
                 rm_start = i
             elif ctx.lines[i-1].strip(" \n").endswith(";") and  rm_start is not None:
                 rm_end = i
@@ -339,8 +339,6 @@ def fix(code: str, llm_adapter: OpenAILLMAdapter) -> bool:
 
 
 def inject_err_to_contract(erc_file, out, num_of_errors=3):
-    contracts_dir = os.path.join(out, "contracts")
-    os.makedirs(contracts_dir, exist_ok=True)
     _, cu = compile(erc_file)
       
     # prepare the file lines
@@ -350,93 +348,107 @@ def inject_err_to_contract(erc_file, out, num_of_errors=3):
     erc_file_name = os.path.basename(erc_file).split(".")[0]
     # get the contract(s) without been inherited and their erc(s)
     c2ercs = get_contracts_and_ercs(cu)
-    for contract, ercs in c2ercs.items():
-        filename = f"{erc_file_name}_{contract.name}"
-        metadata_json = os.path.join(out, filename+".json")
-        if os.path.exists(metadata_json):
-            continue
-        for erc in ercs:
-            if erc not in erc_error_injector_configs:
-                logger.error(f"don't have error injectors for {erc}")
-                continue
-            inj_configs = erc_error_injector_configs[erc]
-           
-            # randomly choose N config
-            selected_inj_configs = []
-            randomlist = random.sample(range(len(inj_configs)), num_of_errors)
-            for index in randomlist:
-                selected_inj_configs.append(inj_configs[index])
 
-            err_file = os.path.join(contracts_dir, filename+f"_errs.sol")
-            metadata = {
-                "erc": erc,
-                "contract": contract.name,
-                "contract_file": err_file,
-                "inj_errors": [],
-                "compile_error": None
-            }
-            all_change_logs = []
-            for i, inj_config in enumerate(selected_inj_configs):
-                logger.info(inj_config)
-                inj_type = inj_config[0]
-                inj_args = inj_config[1]
-                changelogs = None
-                target_fn = None
-                if "function" in inj_args:
-                    target_fn = get_the_function(cu, contract.name, fname=inj_args["function"], fnumofargs=inj_args["numofargs"])
-                inj_ctx = InjectContext(
-                    cu=cu,
-                    target_fn=target_fn,
-                    contract=contract,
-                    lines=lines
-                )
-                inj_ex = None
-                try:
-                    if inj_type == "throw":
-                        changelogs = inject_throw_error(inj_ctx, 0, inj_args.get('fn_params', None), inj_args.get('msgsender', None))
-                    elif inj_type == "emit":
-                        changelogs = inject_emit_error(inj_ctx, 0, inj_args['event'], inj_args.get('anchor_fn', None))
-                    elif inj_type == "call":
-                        changelogs = inject_call_error(inj_ctx, 0, inj_args['callee'])
-                    elif inj_type == "assign":
-                        changelogs = inject_assign_error(inj_ctx, 0, inj_args['anchor_fn'])
-                    elif inj_type == "interface":
-                        changelogs = inject_interface_error(inj_ctx, 0)
-                    elif inj_type == "return":
-                        changelogs = inject_return_error(inj_ctx, 0)
-                except Exception as ex:
-                    logger.error(ex, stack_info=True, exc_info=True)
-                    inj_ex = str(ex)
-                    
+    # only one contract without inheritance exist
+    contract, ercs = list(c2ercs.items())[0]
+    metadata_json = os.path.join(out, erc_file_name+".json")
+    
+    erc = None
+    
+    if "721" in ercs:
+        erc = "721"
+    elif "1155" in ercs:
+        erc = "1155"
+    elif "20" in ercs:
+        erc = "20"
+    if erc is None:
+        return
+    
+    if os.path.exists(metadata_json):
+        with open(metadata_json, "r") as mf:
+            existing_meta = json.load(mf)
+        if existing_meta['erc'] == erc:
+            return
+    
+   
+    inj_configs = erc_error_injector_configs[erc]
+    
+    # randomly choose N config
+    selected_inj_configs = []
+    randomlist = random.sample(range(len(inj_configs)), num_of_errors)
+    for index in randomlist:
+        selected_inj_configs.append(inj_configs[index])
 
-                if changelogs is None:
-                    logger.error("changelogs is none")
-                    continue
-                
-                all_change_logs.extend(changelogs)
-                
-                record = {
-                    "config": inj_config,
-                    "lines": [asdict(cl) for cl in changelogs]
-                }
-                metadata["inj_errors"].append(record)
-                    
-            if all_change_logs:
-                logger.debug(all_change_logs)
-                new_lines = apply_changelog(lines, all_change_logs)
-                with open(err_file, "w") as out_file:
-                    out_file.write("".join(new_lines))
-                # call compile function(example at the first line of this function) to see whether it can compile
-                try:
-                    _, cu_new = compile(err_file)
-                except Exception as e:
-                    logger.error(e, stack_info=True, exc_info=True)
-                    inj_ex = "compile error "+ str(e)
+    err_file = os.path.join(out, f"{erc_file_name}.sol")
+    metadata = {
+        "erc": erc,
+        "contract": contract.name,
+        "inj_file": err_file,
+        "orig_file": erc_file,
+        "inj_errors": [],
+        "compile_error": None
+    }
+    all_change_logs = []
+    for i, inj_config in enumerate(selected_inj_configs):
+        logger.info(inj_config)
+        inj_type = inj_config[0]
+        inj_args = inj_config[1]
+        changelogs = None
+        target_fn = None
+        if "function" in inj_args:
+            target_fn = get_the_function(cu, contract.name, fname=inj_args["function"], fnumofargs=inj_args["numofargs"])
+        inj_ctx = InjectContext(
+            cu=cu,
+            target_fn=target_fn,
+            contract=contract,
+            lines=lines
+        )
+        inj_ex = None
+        try:
+            if inj_type == "throw":
+                changelogs = inject_throw_error(inj_ctx, 0, inj_args.get('fn_params', None), inj_args.get('msgsender', None), inj_args.get('wr', None))
+            elif inj_type == "emit":
+                changelogs = inject_emit_error(inj_ctx, 0, inj_args['event'], inj_args.get('anchor_fn', None))
+            elif inj_type == "call":
+                changelogs = inject_call_error(inj_ctx, 0, inj_args['callee'])
+            elif inj_type == "assign":
+                changelogs = inject_assign_error(inj_ctx, 0, inj_args['anchor_fn'])
+            elif inj_type == "interface":
+                changelogs = inject_interface_error(inj_ctx, 0)
+            elif inj_type == "return":
+                changelogs = inject_return_error(inj_ctx, 0)
+        except Exception as ex:
+            logger.error(ex, stack_info=True, exc_info=True)
+            inj_ex = str(ex)
             
-                metadata["compile_error"] = inj_ex
-                
 
-        with open(metadata_json, "w") as out_file:
-            json.dump(metadata, out_file, indent=4)
+        if changelogs is None:
+            logger.error("changelogs is none")
+            continue
+        
+        all_change_logs.extend(changelogs)
+        
+        record = {
+            "config": inj_config,
+            "lines": [asdict(cl) for cl in changelogs]
+        }
+        metadata["inj_errors"].append(record)
+    
+
+    if all_change_logs:
+        logger.debug(all_change_logs)
+        new_lines = apply_changelog(lines, all_change_logs)
+        with open(err_file, "w") as out_file:
+            out_file.write("".join(new_lines))
+        # call compile function(example at the first line of this function) to see whether it can compile
+        try:
+            _, _ = compile(err_file)
+        except Exception as e:
+            # logger.error(e, stack_info=True, exc_info=True)
+            inj_ex = "compile error "+ str(e)
+        metadata["compile_error"] = inj_ex
+
+    with open(metadata_json, "w") as out_file:
+        json.dump(metadata, out_file, indent=4)
 
 

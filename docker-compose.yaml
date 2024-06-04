@@ -10,11 +10,11 @@ services:
       - ./py:/scbench/py
       - ./dataset:/scbench/dataset
     working_dir: /scbench
-    command: celery -A py.tasks worker --loglevel=info --concurrency 1
-    scale: 2
+    command: celery -A tasks worker --loglevel=info --concurrency 1
+    scale: 16
     environment:
       - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
       - PYTHONPATH=py
   
   redis:
