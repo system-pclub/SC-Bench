@@ -22,7 +22,8 @@
                     ],
                     "to_replace": []
                 }
-            ]
+            ],
+            "inj_fn": "transfer"
         },
         {
             "config": [

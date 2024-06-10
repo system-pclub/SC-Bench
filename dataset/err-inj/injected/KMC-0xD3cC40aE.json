@@ -71,18 +71,6 @@
                     "to_replace": []
                 }
             ]
-        },
-        {
-            "config": [
-                "emit",
-                {
-                    "event": "Approval",
-                    "anchor_fn": "getApproved",
-                    "rule": "event 'Transfer' emits when the approved address for an NFT is changed or reaffirmed",
-                    "severity": "low"
-                }
-            ],
-            "lines": []
         }
     ],
     "compile_error": null

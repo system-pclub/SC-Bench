@@ -44,18 +44,6 @@
                     "to_replace": []
                 }
             ]
-        },
-        {
-            "config": [
-                "emit",
-                {
-                    "rule": " SHOULD trigger a Transfer event with the _from address set to 0x0 when tokens are created",
-                    "event": "Transfer",
-                    "anchor_fn": "totalSupply",
-                    "severity": "low"
-                }
-            ],
-            "lines": []
         }
     ],
     "compile_error": null
