@@ -57,7 +57,8 @@
                     ],
                     "to_replace": []
                 }
-            ]
+            ],
+            "inj_fn": "constructor"
         },
         {
             "config": [

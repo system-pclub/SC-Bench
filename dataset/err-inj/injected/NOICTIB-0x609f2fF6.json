@@ -70,7 +70,8 @@
                     ],
                     "to_replace": []
                 }
-            ]
+            ],
+            "inj_fn": "constructor"
         }
     ],
     "compile_error": null
