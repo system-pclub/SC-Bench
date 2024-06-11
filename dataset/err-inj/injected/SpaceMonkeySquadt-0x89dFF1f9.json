@@ -67,7 +67,8 @@
                     ],
                     "to_replace": []
                 }
-            ]
+            ],
+            "inj_fn": "mint"
         }
     ],
     "compile_error": null

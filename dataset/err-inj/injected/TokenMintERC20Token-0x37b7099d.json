@@ -1,8 +1,0 @@
-{
-    "erc": "20",
-    "contract": "TokenMintERC20Token",
-    "inj_file": "dataset/err-inj/injected/TokenMintERC20Token-0x37b7099d.sol",
-    "orig_file": "dataset/err-inj/origin/TokenMintERC20Token-0x37b7099d.sol",
-    "inj_errors": [],
-    "compile_error": null
-}
