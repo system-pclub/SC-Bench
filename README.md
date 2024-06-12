@@ -48,4 +48,19 @@ $ pytest
 
 |      | call | emit | throw | interface | assign | return | total | # of contracts |
 |------|------|------|-------|-----------|--------|--------|-------|---| 
-| ERC-20  | 0    | 0    | 0     | 0         | 0      | 0      | 0     | 0|
+| ERC-20  | 0    | 57    | 48     | 35         | 1      | 4      | 145     | 30|
+
+### Method 1 (LLM: Full Contract + Full ERC)
+|         | high | medium | low | total |
+|------   |------|------|-------|-----------|
+| ERC-20  | (16,0,40)     |  (21, 0, 36)   |  (5,2, 6)  |   (42,2,82)   |
+
+### Method 2 (LLM: Full Contract + Single Violated Rule)
+|         | high | medium | low | total |
+|------   |------|------|-------|-----------|
+| ERC-20  | (3, 18)     |  (29, 30)   |  (30, 35)  |   (62, 83)    |
+
+### Method 3 (LLM: Sliced Code + Single Violated Rule)
+|         | high | medium | low | total |
+|------   |------|------|-------|-----------|
+| ERC-20  | (8, 13)     |  (48, 11)   |  (54, 11) |   (110, 35)    |

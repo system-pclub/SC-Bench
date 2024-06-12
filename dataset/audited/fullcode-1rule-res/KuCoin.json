@@ -27,7 +27,7 @@
         "function": "transfer",
         "contract": "MyToken",
         "rule": "The function should return bool, which indicates whether the operation was successful",
-        "type": "return",
+        "type": "interface",
         "filepath": "dataset/audited/contracts/KuCoin.sol",
         "llm_can_detect": true
     },
@@ -51,7 +51,7 @@
         "function": "transfer",
         "contract": "MyToken",
         "rule": "Transfers of 0 values MUST be treated as normal transfers and fire the Transfer event",
-        "type": "zero-val",
+        "type": "throw",
         "filepath": "dataset/audited/contracts/KuCoin.sol",
         "llm_can_detect": true
     }

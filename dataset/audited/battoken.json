@@ -51,7 +51,7 @@
         "function": "transfer",
         "contract": "BAToken",
         "rule": "Transfers of 0 values MUST be treated as normal transfers and fire the Transfer event",
-        "type": "zero-val",
+        "type": "throw",
         "filepath": "dataset/audited/contracts/battoken.sol",
         "llm_can_detect": true
     },
@@ -59,7 +59,7 @@
         "function": "transferFrom",
         "contract": "BAToken",
         "rule": "Transfers of 0 values MUST be treated as normal transfers and fire the Transfer event",
-        "type": "zero-val",
+        "type": "throw",
         "filepath": "dataset/audited/contracts/battoken.sol",
         "llm_can_detect": true
     }
