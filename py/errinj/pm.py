@@ -139,23 +139,28 @@ def inject_emit_error(ctx: InjectContext, strategy:int, event_name:str, state_va
         List[ChangeLog]: _description_
     """
     change_logs = []
+    
+    # Fn is None is the rule is function-related emit
+    # Fn is not None, and will be a public function name if the fule is compound-rule
+    fn = None
     if ctx.target_fn is not None:
         # means it is function related emit
         ev_calls = [op for op in ctx.target_fn.all_slithir_operations() if isinstance(op, EventCall) and op.name == event_name]
-        
         for call in ev_calls:
             lines = call.node.source_mapping.lines
             change_logs.append(
                 ChangeLog(orig_range=(min(lines), max(lines)), to_replace=[])
             )
+        
     else:
-        # means it is compund-rule, we need to pick a function that has such state var changed
+        # means it is comppund-rule, we need to pick a function that has such state var changed
         anchor_fn = get_the_function(ctx.cu, ctx.contract, fname=state_var_anchor_fn)
         anchored_statevar = get_anchored_state_variable(anchor_fn)
-        potential_fns = [f for f in ctx.contract.functions if anchored_statevar in f.state_variables_written]
+        potential_fns = [f for f in ctx.contract.functions if (f.is_constructor or f.visibility == "public") and anchored_statevar in f.all_state_variables_written()]
         if not potential_fns:
             return None
         target_fn = potential_fns[0]
+        fn = target_fn.name
         ev_calls = [op for op in target_fn.all_slithir_operations() if isinstance(op, EventCall) and op.name == event_name]
         for call in ev_calls:
             lines = call.node.source_mapping.lines
@@ -163,7 +168,7 @@ def inject_emit_error(ctx: InjectContext, strategy:int, event_name:str, state_va
                 ChangeLog(orig_range=(min(lines), max(lines)), to_replace=[])
             )
         
-    return change_logs
+    return change_logs, fn
 
 def inject_call_error(ctx: InjectContext, strategy:int, expect_call_fn:str) -> List[ChangeLog]:
     """_summary_

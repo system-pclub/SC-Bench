@@ -64,3 +64,18 @@ $ pytest
 |         | high | medium | low | total |
 |------   |------|------|-------|-----------|
 | ERC-20  | (8, 13)     |  (48, 11)   |  (54, 11) |   (110, 35)    |
+
+## Average Lines of Code
+Manual-Inspect: 303.73
+Err-Inj: 2972041 / 5347 = 555.83
+
+## Average Errors
+Manual-Inspect: 4.83
+Err-Inj: 2.96
+
+## How errors distribute across different security impacts
+
+|         | high | medium | low | 
+|------   |------|------|-------|
+| Manual-Inspect | 9.4% | 29.2 % | 61.3 % |
+| Err - Inj | 14.1% | 62.9% | 23.0% |
